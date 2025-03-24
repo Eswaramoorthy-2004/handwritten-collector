@@ -48,21 +48,22 @@ const App = () => {
   };
 
   const saveImage = async () => {
-    const dataUrl = canvasRef.current.toDataURL("image/png");
+    const canvas = canvasRef.current;
+    const dataUrl = canvas.toDataURL("image/png"); // Convert canvas to Base64
 
-    const formData = new FormData();
-    formData.append("image", dataUrl); // Sending Base64 string
-    formData.append("character", characters[currentIndex]);
+    const payload = {
+      character: characters[currentIndex],
+      image: dataUrl, // Send Base64 string
+    };
 
     try {
-      await axios.post("https://handwritten-collector.onrender.com/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      await axios.post("https://handwritten-collector.onrender.com/upload", payload, {
+        headers: { "Content-Type": "application/json" },
       });
 
       setMessage("Image uploaded successfully!");
       clearCanvas();
 
-      // Move to the next character
       if (currentIndex < characters.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {

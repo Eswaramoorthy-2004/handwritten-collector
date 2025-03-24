@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
-app.use(express.json({ limit: "10mb" })); // Allow large JSON payloads
+app.use(express.json({ limit: "10mb" })); // Increase payload limit for Base64 images
 
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -14,9 +14,9 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("MongoDB connection error:", err));
 
 app.use(cors({
-    origin: "https://teal-griffin-e1c96c.netlify.app", // Use main Netlify URL
-    methods: "GET,POST",
-    credentials: true
+  origin: "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app",
+  methods: "GET,POST",
+  credentials: true
 }));
 
 const CharacterSchema = new mongoose.Schema({
@@ -39,6 +39,7 @@ app.post("/upload", async (req, res) => {
 
     res.json({ success: true, message: "Image saved successfully" });
   } catch (error) {
+    console.error("Upload error:", error);
     res.status(500).json({ success: false, message: "Upload failed" });
   }
 });
@@ -48,7 +49,7 @@ app.get("/data", async (req, res) => {
     const data = await Character.find();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error fetching data" });
+    res.status(500).json({ success: false, message: "Failed to fetch data" });
   }
 });
 
