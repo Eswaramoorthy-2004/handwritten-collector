@@ -13,14 +13,31 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log("Connected to MongoDB"))
 .catch(err => console.error("MongoDB connection error:", err));
 
+// app.use(cors({
+//   origin: [
+//     "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app",
+//     "https://handwritten-collector.onrender.com"
+//   ],
+//   methods: "GET,POST",
+//   credentials: true
+// }));
+
+
+const cors = require("cors");
+
 app.use(cors({
   origin: [
-    "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app",
+    "https://teal-griffin-e1c96c.netlify.app",
     "https://handwritten-collector.onrender.com"
   ],
-  methods: "GET,POST",
+  methods: "GET, POST, OPTIONS",
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept"],
   credentials: true
 }));
+
+// Handle preflight requests
+app.options("*", cors());
+
 
 const CharacterSchema = new mongoose.Schema({
   character: String,
