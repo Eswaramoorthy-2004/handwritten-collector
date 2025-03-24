@@ -1,17 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import "./App.css"; // Importing CSS
+import "./App.css"; 
 
 const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const App = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
-  const isDrawingRef = useRef(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setupCanvas();
@@ -28,46 +27,21 @@ const App = () => {
     ctxRef.current = ctx;
   };
 
-  const startDrawing = useCallback((e) => {
-    const { offsetX, offsetY } = e.nativeEvent;
+  const startDrawing = (e) => {
     ctxRef.current.beginPath();
-    ctxRef.current.moveTo(offsetX, offsetY);
-    isDrawingRef.current = true;
-  }, []);
-
-  const draw = useCallback((e) => {
-    if (!isDrawingRef.current) return;
-    const { offsetX, offsetY } = e.nativeEvent;
-    ctxRef.current.lineTo(offsetX, offsetY);
-    ctxRef.current.stroke();
-  }, []);
-
-  const stopDrawing = useCallback(() => {
-    isDrawingRef.current = false;
-    ctxRef.current.closePath();
-  }, []);
-
-  const handleTouchStart = (e) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvasRef.current.getBoundingClientRect();
-    ctxRef.current.beginPath();
-    ctxRef.current.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-    isDrawingRef.current = true;
+    ctxRef.current.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    setIsDrawing(true);
   };
 
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-    if (!isDrawingRef.current) return;
-    const touch = e.touches[0];
-    const rect = canvasRef.current.getBoundingClientRect();
-    ctxRef.current.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+  const draw = (e) => {
+    if (!isDrawing) return;
+    ctxRef.current.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
     ctxRef.current.stroke();
   };
 
-  const handleTouchEnd = () => {
-    isDrawingRef.current = false;
+  const stopDrawing = () => {
     ctxRef.current.closePath();
+    setIsDrawing(false);
   };
 
   const clearCanvas = () => {
@@ -78,34 +52,27 @@ const App = () => {
     const canvas = canvasRef.current;
     const dataUrl = canvas.toDataURL("image/png");
 
-    if (dataUrl === canvas.toDataURL("image/png")) {
-      setMessage("Draw something before submitting!");
+    // Debugging: Check if the canvas is empty
+    console.log("Canvas Data URL:", dataUrl);
+
+    if (dataUrl === "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...") {
+      setMessage("⚠️ Draw something before submitting!");
       return;
     }
 
     setIsLoading(true);
     setMessage("");
 
-    const payload = {
-      character: characters[currentIndex],
-      image: dataUrl,
-    };
-
     try {
-      await axios.post("https://handwritten-collector.onrender.com/upload", payload, {
-        headers: { "Content-Type": "application/json" },
+      await axios.post("https://handwritten-collector.onrender.com/upload", {
+        character: characters[currentIndex],
+        image: dataUrl,
       });
 
       setMessage("✅ Image uploaded successfully!");
       clearCanvas();
-
-      if (currentIndex < characters.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        setMessage("🎉 All characters completed!");
-      }
+      setCurrentIndex((prev) => (prev < characters.length - 1 ? prev + 1 : prev));
     } catch (error) {
-      console.error(error);
       setMessage("❌ Upload failed! Try again.");
     } finally {
       setIsLoading(false);
@@ -123,9 +90,6 @@ const App = () => {
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           className="canvas"
         ></canvas>
         <div className="buttons">
