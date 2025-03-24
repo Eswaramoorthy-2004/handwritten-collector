@@ -57,7 +57,7 @@ const App = () => {
     formData.append("character", characters[currentIndex]);
 
     try {
-      await axios.post("http://localhost:5000/upload", formData, {
+      await axios.post("https://handwritten-collector.onrender.com/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage("Image uploaded successfully!");

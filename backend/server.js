@@ -26,6 +26,16 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error("MongoDB connection error:", err));
 
 
+const cors = require("cors");
+
+app.use(cors({
+    origin: "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app/", // Replace with actual Netlify frontend URL
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true
+}));
+
+
+
 const CharacterSchema = new mongoose.Schema({
   character: String,
   image: String, // Store as base64
