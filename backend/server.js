@@ -3,20 +3,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const multer = require("multer");
 const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
-/*
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-*/
-
-//require('dotenv').config(); // Load environment variables
 
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -25,20 +14,15 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(() => console.log("Connected to MongoDB"))
 .catch(err => console.error("MongoDB connection error:", err));
 
-
-const cors = require("cors");
-
 app.use(cors({
-    origin: "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app/", // Replace with actual Netlify frontend URL
+    origin: "https://67e18b9a991d744159c408b6--teal-griffin-e1c96c.netlify.app", // Corrected Netlify URL
     methods: "GET,POST,PUT,DELETE",
     credentials: true
 }));
 
-
-
 const CharacterSchema = new mongoose.Schema({
   character: String,
-  image: String, // Store as base64
+  image: Buffer, // Store as binary buffer
 });
 
 const Character = mongoose.model("Character", CharacterSchema);
@@ -49,7 +33,7 @@ const upload = multer({ storage });
 app.post("/upload", upload.single("image"), async (req, res) => {
   try {
     const { character } = req.body;
-    const imageBuffer = req.file.buffer.toString("base64");
+    const imageBuffer = req.file.buffer; // Corrected: Store as binary buffer
 
     const newEntry = new Character({ character, image: imageBuffer });
     await newEntry.save();
@@ -71,4 +55,3 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 app.get("/", (req, res) => {
   res.send("Backend is running successfully!");
 });
-
