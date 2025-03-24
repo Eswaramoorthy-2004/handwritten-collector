@@ -1,15 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
-import "./App.css"; // Importing the CSS file
+import "./App.css"; // Importing CSS
 
 const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const App = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [message, setMessage] = useState("");
+  const isDrawingRef = useRef(false);
 
   useEffect(() => {
     setupCanvas();
@@ -26,21 +28,46 @@ const App = () => {
     ctxRef.current = ctx;
   };
 
-  const startDrawing = (e) => {
+  const startDrawing = useCallback((e) => {
+    const { offsetX, offsetY } = e.nativeEvent;
     ctxRef.current.beginPath();
-    ctxRef.current.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-    setIsDrawing(true);
+    ctxRef.current.moveTo(offsetX, offsetY);
+    isDrawingRef.current = true;
+  }, []);
+
+  const draw = useCallback((e) => {
+    if (!isDrawingRef.current) return;
+    const { offsetX, offsetY } = e.nativeEvent;
+    ctxRef.current.lineTo(offsetX, offsetY);
+    ctxRef.current.stroke();
+  }, []);
+
+  const stopDrawing = useCallback(() => {
+    isDrawingRef.current = false;
+    ctxRef.current.closePath();
+  }, []);
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvasRef.current.getBoundingClientRect();
+    ctxRef.current.beginPath();
+    ctxRef.current.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    isDrawingRef.current = true;
   };
 
-  const draw = (e) => {
-    if (!isDrawing) return;
-    ctxRef.current.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    if (!isDrawingRef.current) return;
+    const touch = e.touches[0];
+    const rect = canvasRef.current.getBoundingClientRect();
+    ctxRef.current.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
     ctxRef.current.stroke();
   };
 
-  const stopDrawing = () => {
+  const handleTouchEnd = () => {
+    isDrawingRef.current = false;
     ctxRef.current.closePath();
-    setIsDrawing(false);
   };
 
   const clearCanvas = () => {
@@ -49,11 +76,19 @@ const App = () => {
 
   const saveImage = async () => {
     const canvas = canvasRef.current;
-    const dataUrl = canvas.toDataURL("image/png"); // Convert canvas to Base64
+    const dataUrl = canvas.toDataURL("image/png");
+
+    if (dataUrl === canvas.toDataURL("image/png")) {
+      setMessage("Draw something before submitting!");
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage("");
 
     const payload = {
       character: characters[currentIndex],
-      image: dataUrl, // Send Base64 string
+      image: dataUrl,
     };
 
     try {
@@ -61,17 +96,19 @@ const App = () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      setMessage("Image uploaded successfully!");
+      setMessage("✅ Image uploaded successfully!");
       clearCanvas();
 
       if (currentIndex < characters.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
-        setMessage("All characters completed!");
+        setMessage("🎉 All characters completed!");
       }
     } catch (error) {
       console.error(error);
-      setMessage("Upload failed!");
+      setMessage("❌ Upload failed! Try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,11 +123,16 @@ const App = () => {
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className="canvas"
         ></canvas>
         <div className="buttons">
           <button onClick={clearCanvas} className="clear-btn">Clear</button>
-          <button onClick={saveImage} className="submit-btn">Submit</button>
+          <button onClick={saveImage} className="submit-btn" disabled={isLoading}>
+            {isLoading ? "Uploading..." : "Submit"}
+          </button>
         </div>
         <p className="message">{message}</p>
       </div>
